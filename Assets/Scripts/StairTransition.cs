@@ -1,54 +1,87 @@
 using UnityEngine;
 
-public class StairTransparencyController : MonoBehaviour
+public class TriggerManager : MonoBehaviour
 {
-    public GameObject highFloor; // Ссылка на объект High Floor
-    public Transform player; // Ссылка на игрока
-    public Camera mainCamera; // Ссылка на основную камеру
-    public float transparencyDistance = 5f; // Расстояние, на котором начнется изменение прозрачности
-    public float deactivateHeight = 0f; // Высота, на которой High Floor станет неактивным
+    public GameObject HighFloor;
+    public GameObject DownFloor;
+    public GameObject HighStairs;
+    public GameObject DownStairs;
 
-    private int highFloorLayer;
-    private int defaultCullingMask;
-    private bool isDeactivated = false;
+    private Vector3 highTriggerEntrySide;
+    private Vector3 midTriggerEntrySide;
+    private Vector3 downTriggerEntrySide;
 
-    void Start()
+    private bool highTriggerTouched = false;
+    private bool midTriggerTouched = false;
+    private bool downTriggerTouched = false;
+
+    private void OnTriggerEnter(Collider other)
     {
-        // Получаем слой High Floor
-        highFloorLayer = LayerMask.NameToLayer("HighFloorLayer");
-        defaultCullingMask = mainCamera.cullingMask;
-    }
-
-    void Update()
-    {
-        if (isDeactivated) return;
-
-        float playerHeight = player.position.y;
-
-        // Изменяем видимость слоя, если игрок находится в пределах transparencyDistance
-        if (playerHeight < transparencyDistance)
+        if (other.CompareTag("Player"))
         {
-            float alpha = Mathf.Clamp01(playerHeight / transparencyDistance);
-            SetLayerVisibility(alpha > 0);
-        }
+            Vector3 entrySide = DetermineEntrySide(other.transform.position, transform.position);
 
-        // Деактивируем High Floor, если игрок ниже deactivateHeight
-        if (playerHeight < deactivateHeight)
-        {
-            highFloor.SetActive(false);
-            isDeactivated = true;
+            switch (gameObject.name)
+            {
+                case "High":
+                    HandleHighTrigger(entrySide);
+                    break;
+                case "Mid":
+                    HandleMidTrigger(entrySide);
+                    break;
+                case "Down":
+                    HandleDownTrigger(entrySide);
+                    break;
+            }
         }
     }
 
-    void SetLayerVisibility(bool isVisible)
+    private Vector3 DetermineEntrySide(Vector3 playerPosition, Vector3 triggerPosition)
     {
-        if (isVisible)
+        return (playerPosition - triggerPosition).normalized;
+    }
+
+    private void HandleHighTrigger(Vector3 entrySide)
+    {
+        if (!highTriggerTouched)
         {
-            mainCamera.cullingMask |= (1 << highFloorLayer);
+            highTriggerEntrySide = entrySide;
+            HighFloor.SetActive(false);
+            highTriggerTouched = true;
         }
-        else
+        else if (Vector3.Dot(highTriggerEntrySide, entrySide) < 0)
         {
-            mainCamera.cullingMask &= ~(1 << highFloorLayer);
+            HighFloor.SetActive(true);
+        }
+    }
+
+    private void HandleMidTrigger(Vector3 entrySide)
+    {
+        if (!midTriggerTouched)
+        {
+            midTriggerEntrySide = entrySide;
+            DownFloor.SetActive(true);
+            HighStairs.SetActive(false);
+            midTriggerTouched = true;
+        }
+        else if (Vector3.Dot(midTriggerEntrySide, entrySide) < 0)
+        {
+            DownFloor.SetActive(false);
+            HighStairs.SetActive(true);
+        }
+    }
+
+    private void HandleDownTrigger(Vector3 entrySide)
+    {
+        if (!downTriggerTouched)
+        {
+            downTriggerEntrySide = entrySide;
+            DownStairs.SetActive(false);
+            downTriggerTouched = true;
+        }
+        else if (Vector3.Dot(downTriggerEntrySide, entrySide) < 0)
+        {
+            DownStairs.SetActive(true);
         }
     }
 }
