@@ -3,7 +3,7 @@ using TMPro;
 
 public class FacePlayerAndActivate : MonoBehaviour
 {
-    public Transform player; // Ссылка на объект игрока
+    public Transform player;
     public float activationDistance = 10f; // Расстояние, на котором текст активируется
 
     private TextMeshPro textMeshPro;
@@ -26,19 +26,15 @@ public class FacePlayerAndActivate : MonoBehaviour
             return;
         }
 
-        // Вычисляем расстояние до игрока
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // Активируем или деактивируем текст в зависимости от расстояния
         textMeshPro.enabled = distanceToPlayer <= activationDistance;
 
-        // Поворачиваем текст лицевой стороной к игроку
         if (textMeshPro.enabled)
         {
             Vector3 directionToPlayer = player.position - transform.position;
             Quaternion lookRotation = Quaternion.LookRotation(directionToPlayer);
 
-            // Разворачиваем на 180 градусов по оси Y
             lookRotation *= Quaternion.Euler(0, 180, 0);
 
             transform.rotation = Quaternion.Euler(0, lookRotation.eulerAngles.y, 0);
