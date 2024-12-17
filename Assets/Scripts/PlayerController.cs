@@ -4,6 +4,7 @@ public class PlayerController : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public Camera mainCamera;
+    public float rotationOffset = 0f; // Смещение поворота в градусах
 
     private Rigidbody rb;
 
@@ -38,7 +39,9 @@ public class PlayerController : MonoBehaviour
             Vector3 target = hitInfo.point;
             Vector3 direction = (target - transform.position).normalized;
             direction.y = 0;
-            Quaternion lookRotation = Quaternion.LookRotation(direction);
+
+            // Применяем смещение поворота
+            Quaternion lookRotation = Quaternion.LookRotation(direction) * Quaternion.Euler(0, rotationOffset, 0);
             rb.rotation = Quaternion.Slerp(rb.rotation, lookRotation, Time.deltaTime * 10f);
         }
     }
