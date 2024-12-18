@@ -4,7 +4,7 @@ using TMPro;
 public class FacePlayerAndActivate : MonoBehaviour
 {
     public Transform player;
-    public float activationDistance = 10f; // –ассто€ние, на котором текст активируетс€
+    public float activationDistance = 10f;
 
     private TextMeshPro textMeshPro;
 
