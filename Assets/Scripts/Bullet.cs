@@ -5,10 +5,19 @@ public class Bullet : MonoBehaviour
     public float speed = 10f;
     public float lifeTime = 5f;
     public LayerMask collisionLayers;
+    private TrailRenderer trailRenderer;
 
     void Start()
     {
         Destroy(gameObject, lifeTime);
+
+        trailRenderer = gameObject.AddComponent<TrailRenderer>();
+        trailRenderer.time = 0.1f;
+        trailRenderer.startWidth = 0.1f;
+        trailRenderer.endWidth = 0.0f;
+        trailRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        trailRenderer.startColor = Color.red;
+        trailRenderer.endColor = Color.yellow;
     }
 
     void Update()
@@ -18,8 +27,9 @@ public class Bullet : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("BulletDestroyer"))
         {
+            Destroy(gameObject);
             return;
         }
 

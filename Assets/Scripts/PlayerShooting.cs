@@ -1,6 +1,8 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using System;
 
 [System.Serializable]
 public class Weapon
@@ -28,6 +30,7 @@ public class PlayerShooting : MonoBehaviour
     public List<Weapon> weapons;
     public GameObject bulletPrefab;
     public TMP_Text ammoText;
+    public GameObject reloadAnim;
     public float offsetRotation = 0f;
 
     [Range(0f, 1f)]
@@ -38,15 +41,19 @@ public class PlayerShooting : MonoBehaviour
     private Transform currentFirePoint;
     private Weapon currentWeapon;
     private float nextFireTime = 0f;
-    private int currentAmmo;
     private bool isReloading = false;
     private AudioSource audioSource;
+
+    private Dictionary<Weapon, int> ammoDictionary = new Dictionary<Weapon, int>();
 
     private void Start()
     {
         audioSource = GetComponent<AudioSource>();
         UpdateCurrentWeapon();
-        currentAmmo = currentWeapon.magazineCapacity;
+        if (!ammoDictionary.ContainsKey(currentWeapon))
+        {
+            ammoDictionary[currentWeapon] = currentWeapon.magazineCapacity;
+        }
         UpdateAmmoText();
     }
 
@@ -70,6 +77,11 @@ public class PlayerShooting : MonoBehaviour
                 currentWeapon = weapon;
                 currentFirePoint = weapon.weaponObject.transform.Find("FirePoint");
 
+                if (!ammoDictionary.ContainsKey(currentWeapon))
+                {
+                    ammoDictionary[currentWeapon] = currentWeapon.magazineCapacity;
+                }
+
                 if (weapon.imageWeapon != null)
                 {
                     weapon.imageWeapon.SetActive(true);
@@ -87,30 +99,44 @@ public class PlayerShooting : MonoBehaviour
 
     private void HandleShooting()
     {
-        if (Input.GetButton("Fire1") && Time.time >= nextFireTime && currentAmmo > 0)
+        if (Input.GetButton("Fire1") && Time.time >= nextFireTime && ammoDictionary[currentWeapon] > 0)
         {
             nextFireTime = Time.time + 1f / currentWeapon.fireRate;
             FireBullet();
             PlayRandomShootingSound();
-            currentAmmo--;
+            ammoDictionary[currentWeapon]--;
             ShakeCamera();
         }
     }
 
     private void HandleReloading()
     {
-        if (Input.GetKeyDown(KeyCode.R) && currentAmmo < currentWeapon.magazineCapacity)
+        if (Input.GetKeyDown(KeyCode.R) && ammoDictionary[currentWeapon] < currentWeapon.magazineCapacity)
         {
             StartCoroutine(Reload());
         }
     }
 
-    private System.Collections.IEnumerator Reload()
+    private IEnumerator Reload()
     {
         isReloading = true;
         PlayReloadSound();
+
+        if (ammoText != null)
+            ammoText.gameObject.SetActive(false);
+
+        if (reloadAnim != null)
+            reloadAnim.SetActive(true);
+
         yield return new WaitForSeconds(currentWeapon.reloadTime);
-        currentAmmo = currentWeapon.magazineCapacity;
+
+        if (ammoText != null)
+            ammoText.gameObject.SetActive(true);
+
+        if (reloadAnim != null)
+            reloadAnim.SetActive(false);
+
+        ammoDictionary[currentWeapon] = currentWeapon.magazineCapacity;
         isReloading = false;
     }
 
@@ -126,7 +152,7 @@ public class PlayerShooting : MonoBehaviour
         {
             for (int i = 0; i < currentWeapon.pellets; i++)
             {
-                float spreadAngle = Random.Range(-currentWeapon.spread, currentWeapon.spread);
+                float spreadAngle = UnityEngine.Random.Range(-currentWeapon.spread, currentWeapon.spread);
                 Quaternion bulletRotation = currentFirePoint.rotation * Quaternion.Euler(0, offsetRotation + spreadAngle, 0);
                 Instantiate(bulletPrefab, currentFirePoint.position, bulletRotation);
             }
@@ -142,7 +168,7 @@ public class PlayerShooting : MonoBehaviour
     {
         if (currentWeapon.shootingSounds.Length > 0)
         {
-            int randomIndex = Random.Range(0, currentWeapon.shootingSounds.Length);
+            int randomIndex = UnityEngine.Random.Range(0, currentWeapon.shootingSounds.Length);
             audioSource.PlayOneShot(currentWeapon.shootingSounds[randomIndex], shootingVolume);
         }
     }
@@ -163,7 +189,7 @@ public class PlayerShooting : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator CameraShakeCoroutine(float intensity)
+    private IEnumerator CameraShakeCoroutine(float intensity)
     {
         Vector3 originalPosition = currentWeapon.weaponCamera.transform.position;
         Quaternion originalRotation = currentWeapon.weaponCamera.transform.rotation;
@@ -172,8 +198,8 @@ public class PlayerShooting : MonoBehaviour
 
         while (elapsed < shakeDuration)
         {
-            float x = Random.Range(-1f, 1f) * intensity;
-            float y = Random.Range(-1f, 1f) * intensity;
+            float x = UnityEngine.Random.Range(-1f, 1f) * intensity;
+            float y = UnityEngine.Random.Range(-1f, 1f) * intensity;
 
             currentWeapon.weaponCamera.transform.position = originalPosition + new Vector3(x, y, 0);
 
@@ -190,7 +216,7 @@ public class PlayerShooting : MonoBehaviour
     {
         if (ammoText != null && currentWeapon != null)
         {
-            ammoText.text = $"{currentAmmo}/{currentWeapon.magazineCapacity}";
+            ammoText.text = $"{currentWeapon.magazineCapacity}\n---\n{ammoDictionary[currentWeapon]}";
         }
     }
 }
