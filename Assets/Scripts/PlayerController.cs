@@ -15,6 +15,8 @@ public class PlayerController : MonoBehaviour
     public Slider staminaSlider;
     public Image sliderBackground;
 
+    public GameObject[] alternateAnimationObjects;
+    private Animator animator;
     private float currentStamina;
     private float recoveryTimer;
     private Rigidbody rb;
@@ -22,6 +24,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>();
         currentStamina = maxStamina;
         UpdateStaminaUI();
     }
@@ -31,6 +34,7 @@ public class PlayerController : MonoBehaviour
         Move();
         RotateTowardsMouse();
         RecoverStamina();
+        UpdateAnimator();
     }
 
     void Move()
@@ -99,5 +103,22 @@ public class PlayerController : MonoBehaviour
         {
             sliderBackground.color = Color.red;
         }
+    }
+
+    void UpdateAnimator()
+    {
+        float speed = new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude;
+        animator.SetFloat("Speed", speed);
+
+        bool useAlternateAnimations = false;
+        foreach (var obj in alternateAnimationObjects)
+        {
+            if (obj.activeSelf)
+            {
+                useAlternateAnimations = true;
+                break;
+            }
+        }
+        animator.SetBool("UseAlternateAnimations", useAlternateAnimations);
     }
 }

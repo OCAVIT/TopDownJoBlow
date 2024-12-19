@@ -1,13 +1,28 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using TMPro;
 
 public class TriggerExitHandler : MonoBehaviour
 {
     public GameObject playerManager;
     public GameObject playerManagerOUT;
-    public GameObject outdoor; // Новый объект, который нужно включить
+    public GameObject outdoor;
     public Image blackPanelImage;
+
+    public TMP_Text taskText;
+    public string newTaskText;
+
+    private CanvasGroup canvasGroup;
+
+    private void Start()
+    {
+        canvasGroup = blackPanelImage.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = blackPanelImage.gameObject.AddComponent<CanvasGroup>();
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -19,36 +34,38 @@ public class TriggerExitHandler : MonoBehaviour
 
     private IEnumerator FadeInAndSwitchManagers()
     {
-        // Fade In
-        yield return StartCoroutine(FadeImage(blackPanelImage, 0f, 1f, 2f));
+        yield return StartCoroutine(FadeCanvasGroup(canvasGroup, 0f, 1f, 2f));
 
-        // Включение объекта Outdoor
         outdoor.SetActive(true);
 
-        // Switch Player Managers
         playerManager.SetActive(false);
         playerManagerOUT.SetActive(true);
 
-        // Fade Out
-        yield return StartCoroutine(FadeImage(blackPanelImage, 1f, 0f, 2f));
+        UpdateTaskText();
+
+        yield return StartCoroutine(FadeCanvasGroup(canvasGroup, 1f, 0f, 2f));
     }
 
-    private IEnumerator FadeImage(Image image, float startAlpha, float endAlpha, float duration)
+    private IEnumerator FadeCanvasGroup(CanvasGroup canvasGroup, float startAlpha, float endAlpha, float duration)
     {
         float elapsedTime = 0f;
-        Color color = image.color;
 
         while (elapsedTime < duration)
         {
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Lerp(startAlpha, endAlpha, elapsedTime / duration);
-            color.a = alpha;
-            image.color = color;
+            canvasGroup.alpha = alpha;
             yield return null;
         }
 
-        // Ensure the final alpha is set
-        color.a = endAlpha;
-        image.color = color;
+        canvasGroup.alpha = endAlpha;
+    }
+
+    private void UpdateTaskText()
+    {
+        if (taskText != null)
+        {
+            taskText.text = newTaskText;
+        }
     }
 }

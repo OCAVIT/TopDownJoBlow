@@ -4,11 +4,11 @@ using System.Collections;
 
 public class TimeFreezeTrigger : MonoBehaviour
 {
-    public GameObject dialoguePanel; // Панель диалога
+    public GameObject dialoguePanel;
     public GameObject NMT;
-    public TMP_Text nameText; // Текстовое поле для имени
-    public TMP_Text dialogueText; // Текстовое поле для диалога
-    public GameObject vitya; // Объект Витя
+    public TMP_Text nameText;
+    public TMP_Text dialogueText;
+    public GameObject vitya;
 
     private bool isTimeFrozen = false;
 
@@ -22,23 +22,19 @@ public class TimeFreezeTrigger : MonoBehaviour
 
     private IEnumerator FreezeTime()
     {
-        // Заморозка времени
         Time.timeScale = 0f;
         isTimeFrozen = true;
 
-        // Активация панели диалога и установка текста
         NMT.SetActive(true);
         dialoguePanel.SetActive(true);
         nameText.text = "Витя";
         dialogueText.text = "Червянутая идея покидать двор...";
 
-        // Активация объекта Витя
         if (vitya != null)
         {
             vitya.SetActive(true);
         }
 
-        // Ожидание 2 секунд или нажатия клавиши Space
         float elapsedTime = 0f;
         while (elapsedTime < 2f)
         {
@@ -50,11 +46,9 @@ public class TimeFreezeTrigger : MonoBehaviour
             yield return null;
         }
 
-        // Возобновление времени и деактивация панели диалога
         Time.timeScale = 1f;
         dialoguePanel.SetActive(false);
 
-        // Деактивация объекта Витя
         if (vitya != null)
         {
             vitya.SetActive(false);

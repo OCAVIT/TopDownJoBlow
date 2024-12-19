@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class DialogueSystem : MonoBehaviour
 {
@@ -12,12 +13,13 @@ public class DialogueSystem : MonoBehaviour
     public List<string> dialogueLines = new List<string>();
     public List<GameObject> characterPortraits = new List<GameObject>();
     public List<float> lineDurations = new List<float>();
-    public GameObject blackPanelUII; // Ссылка на BlackPanelUII
-    public GameObject canalisation; // Ссылка на Canalisation
-    public GameObject playerManagerOUT; // Ссылка на PlayerManagerOUT
-    public GameObject animationCamera; // Ссылка на объект AnimationCamera
-    private Animator animationCameraAnimator; // Ссылка на аниматор камеры
-    public GameObject canvas; // Ссылка на Canvas
+    public GameObject blackPanelUII;
+    public GameObject canalisation;
+    public GameObject playerManagerOUT;
+    public GameObject animationCamera;
+    private Animator animationCameraAnimator;
+    public GameObject canvas;
+    public GameObject TaskTaskText;
     public List<string> characterNamesPart2 = new List<string>();
     public List<string> dialogueLinesPart2 = new List<string>();
     public List<GameObject> characterPortraitsPart2 = new List<GameObject>();
@@ -28,11 +30,14 @@ public class DialogueSystem : MonoBehaviour
 
     void Start()
     {
-        HideAllUIElements();
         if (animationCamera != null)
         {
             animationCameraAnimator = animationCamera.GetComponent<Animator>();
         }
+        TaskTaskText.SetActive(false);
+        dialogueUI.SetActive(true);
+        characterNameText.gameObject.SetActive(true);
+        dialogueContent.gameObject.SetActive(true);
     }
 
     public void BeginDialogue()
@@ -46,10 +51,10 @@ public class DialogueSystem : MonoBehaviour
     private IEnumerator RunDialogue()
     {
         dialogueUI.SetActive(true);
+        characterNameText.gameObject.SetActive(true);
         isDialogueRunning = true;
         Time.timeScale = 0f;
 
-        // Первая часть диалога
         while (currentLineIndex < dialogueLines.Count)
         {
             DisplayLine(characterNames[currentLineIndex], dialogueLines[currentLineIndex], characterPortraits[currentLineIndex]);
@@ -87,21 +92,18 @@ public class DialogueSystem : MonoBehaviour
             currentLineIndex++;
         }
 
-        // Завершаем первую часть диалога и запускаем анимацию
         EndDialogue();
 
-        // Ожидаем завершения анимации
         yield return new WaitForSeconds(animationCameraAnimator.GetCurrentAnimatorStateInfo(0).length);
 
-        // Активируем Canalisation
         if (canalisation != null)
         {
             canalisation.SetActive(true);
         }
 
-        // Вторая часть диалога
-        currentLineIndex = 0; // Сброс индекса для второй части
-        dialogueUI.SetActive(true); // Активируем DialogueUI для второй части
+        currentLineIndex = 0;
+        dialogueUI.SetActive(true);
+        characterNameText.gameObject.SetActive(true);
         while (currentLineIndex < dialogueLinesPart2.Count)
         {
             DisplayLine(characterNamesPart2[currentLineIndex], dialogueLinesPart2[currentLineIndex], characterPortraitsPart2[currentLineIndex]);
@@ -127,6 +129,15 @@ public class DialogueSystem : MonoBehaviour
                 if (!isLineComplete)
                 {
                     elapsedTime += Time.unscaledDeltaTime;
+
+                    if (currentLineIndex == 1 && elapsedTime >= lineDurationsPart2[currentLineIndex] - 2f)
+                    {
+                        if (blackPanelUII != null)
+                        {
+                            StartCoroutine(FadeIn(blackPanelUII, 2f));
+                        }
+                    }
+
                     if (elapsedTime >= lineDurationsPart2[currentLineIndex])
                     {
                         isLineComplete = true;
@@ -139,7 +150,12 @@ public class DialogueSystem : MonoBehaviour
             currentLineIndex++;
         }
 
-        // Завершаем вторую часть диалога
+        if (blackPanelUII != null)
+        {
+            yield return StartCoroutine(FadeIn(blackPanelUII, 2f));
+        }
+        SceneManager.LoadScene("Shooting");
+
         EndDialogue();
     }
 
@@ -193,7 +209,6 @@ public class DialogueSystem : MonoBehaviour
         isDialogueRunning = false;
         Time.timeScale = 1f;
 
-        // Деактивируем Canvas и PlayerManagerOUT
         if (canvas != null)
         {
             canvas.SetActive(false);
@@ -203,7 +218,6 @@ public class DialogueSystem : MonoBehaviour
             playerManagerOUT.SetActive(false);
         }
 
-        // Активируем AnimationCamera и устанавливаем параметр Start в true
         if (animationCamera != null)
         {
             animationCamera.SetActive(true);
@@ -213,38 +227,40 @@ public class DialogueSystem : MonoBehaviour
             }
         }
 
-        // Запускаем корутину для активации Canvas после завершения анимации
         StartCoroutine(ReactivateCanvasAfterAnimation());
     }
 
     private IEnumerator ReactivateCanvasAfterAnimation()
     {
-        // Ожидаем завершения анимации
         yield return new WaitForSeconds(animationCameraAnimator.GetCurrentAnimatorStateInfo(0).length - 1f);
 
-        // Запускаем FadeOut
         if (blackPanelUII != null)
         {
-            yield return StartCoroutine(FadeOut(blackPanelUII, 1f));
-        }
-
-        // Активируем Canalisation
-        if (canalisation != null)
-        {
-            canalisation.SetActive(true);
-        }
-
-        // Запускаем FadeIn
-        if (blackPanelUII != null)
-        {
+            Debug.Log("Starting FadeIn");
             yield return StartCoroutine(FadeIn(blackPanelUII, 1f));
         }
 
-        // Реактивируем Canvas
+        yield return new WaitForSeconds(1f);
+
+        if (canalisation != null)
+        {
+            Debug.Log("Activating canalisation");
+            canalisation.SetActive(true);
+            TaskTaskText.SetActive(false);
+        }
+
         if (canvas != null)
         {
+            Debug.Log("Activating canvas");
             canvas.SetActive(true);
         }
+
+        if (blackPanelUII != null)
+        {
+            Debug.Log("Starting FadeOut");
+            yield return StartCoroutine(FadeOut(blackPanelUII, 1f));
+        }
+
     }
 
     private void DisplayLine(string characterName, string dialogue, GameObject characterPortrait)
@@ -258,14 +274,16 @@ public class DialogueSystem : MonoBehaviour
 
         dialogueContent.text = dialogue;
         characterNameText.text = characterName;
-        characterNameText.gameObject.SetActive(true);
     }
 
     private void HideAllUIElements()
     {
-        dialogueUI.SetActive(false);
-        DeactivateAllPortraits();
-        characterNameText.gameObject.SetActive(false);
+        if (isDialogueRunning)
+        {
+            dialogueUI.SetActive(false);
+            DeactivateAllPortraits();
+            characterNameText.gameObject.SetActive(false);
+        }
     }
 
     private void DeactivateAllPortraits()

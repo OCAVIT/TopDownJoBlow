@@ -5,7 +5,7 @@ using TMPro;
 
 public class DialogueManagerLadder : MonoBehaviour
 {
-    public GameObject dialoguePanel;
+    public GameObject dialoguePanell;
     public TMP_Text dialogueText;
     public TMP_Text nameText;
     public TMP_Text taskText;
@@ -36,7 +36,7 @@ public class DialogueManagerLadder : MonoBehaviour
 
     private IEnumerator DialogueCoroutine()
     {
-        dialoguePanel.SetActive(true);
+        dialoguePanell.SetActive(true);
         isDialogueActive = true;
         Time.timeScale = 0f;
 
@@ -78,7 +78,7 @@ public class DialogueManagerLadder : MonoBehaviour
         isDialogueActive = false;
         Time.timeScale = 1f;
 
-        taskText.text = "Tasks:\n - Get out of the house and into the street";
+        taskText.text = "Задача: выйдите на улицу";
         taskText.gameObject.SetActive(true);
         StartCoroutine(BlinkTaskText());
     }
@@ -99,7 +99,7 @@ public class DialogueManagerLadder : MonoBehaviour
 
     private void DeactivateAllUIElements()
     {
-        dialoguePanel.SetActive(false);
+        dialoguePanell.SetActive(false);
         DeactivateAllCharacterImages();
         nameText.gameObject.SetActive(false);
     }

@@ -1,187 +1,149 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
-public class DialogueManager : MonoBehaviour
+public class SimpleDialogueSystem : MonoBehaviour
 {
-    public GameObject dialoguePanel;
-    public GameObject imageMom;
-    public GameObject imageVitya;
-    public GameObject imageDad;
-    public GameObject imageRelative;
+    public GameObject dialogueUI;
     public TMP_Text dialogueText;
-    public TMP_Text nameText;
+    public TMP_Text characterNameText;
     public TMP_Text taskText;
+    public string taskTextContent;
+    public List<string> characterNames = new List<string>();
+    public List<string> dialogueLines = new List<string>();
+    public List<GameObject> characterPortraits = new List<GameObject>();
+    public List<float> lineDurations = new List<float>();
+    public GameObject blackPanel;
 
-    public Image blackPanelImage; // Ссылка на компонент Image BlackPanel
-
-    public float[] dialogueDurations;
-    public string[] dialogueLines;
-    public string[] characterNames;
-
-    public float blinkSpeed = 1f;
-
-    private int currentDialogueIndex = 0;
-    private bool isDialogueActive = false;
-    private bool isLineFullyDisplayed = false;
+    private int currentLineIndex = 0;
+    private bool isDialogueRunning = false;
 
     void Start()
     {
-        StartCoroutine(FadeOutBlackPanel()); // Запустите корутину для уменьшения прозрачности
-
-        DeactivateAllUIElements();
-        taskText.gameObject.SetActive(false);
-        StartCoroutine(StartDialogue());
+        Debug.Log("Start: Активируем диалоговое окно");
+        dialogueUI.SetActive(true);
+        StartCoroutine(FadeOut(blackPanel, 4f));
+        StartDialogue();
     }
 
-    IEnumerator FadeOutBlackPanel()
+    public void StartDialogue()
     {
-        if (blackPanelImage == null)
+        if (!isDialogueRunning)
         {
-            Debug.LogError("BlackPanelImage is not assigned.");
-            yield break;
+            Debug.Log("StartDialogue: Запуск диалога");
+            StartCoroutine(RunDialogue());
         }
-
-        float fadeDuration = 2f; // Увеличьте время для более плавного эффекта
-        float elapsedTime = 0f;
-        Color color = blackPanelImage.color;
-        color.a = 1f; // Убедитесь, что начальная прозрачность равна 1
-        blackPanelImage.color = color;
-
-        while (elapsedTime < fadeDuration)
-        {
-            elapsedTime += Time.unscaledDeltaTime; // Используйте unscaledDeltaTime
-            color.a = Mathf.Lerp(1f, 0f, elapsedTime / fadeDuration);
-            blackPanelImage.color = color;
-            yield return null;
-        }
-
-        color.a = 0f; // Убедитесь, что прозрачность установлена в 0
-        blackPanelImage.color = color;
     }
 
-    IEnumerator StartDialogue()
+    private IEnumerator RunDialogue()
     {
-        dialoguePanel.SetActive(true);
-        isDialogueActive = true;
+        isDialogueRunning = true;
         Time.timeScale = 0f;
 
-        while (currentDialogueIndex < dialogueLines.Length)
+        while (currentLineIndex < dialogueLines.Count)
         {
-            ShowDialogue(GetCharacterImage(currentDialogueIndex), characterNames[currentDialogueIndex], dialogueLines[currentDialogueIndex]);
-            isLineFullyDisplayed = false;
+            Debug.Log($"RunDialogue: Показ строки {currentLineIndex}");
+            ShowLine(characterNames[currentLineIndex], dialogueLines[currentLineIndex], characterPortraits[currentLineIndex]);
 
             float elapsedTime = 0f;
+            bool isLineComplete = false;
 
-            while (elapsedTime < dialogueDurations[currentDialogueIndex])
+            while (elapsedTime < lineDurations[currentLineIndex] || !isLineComplete)
             {
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
-                    if (isLineFullyDisplayed)
+                    if (isLineComplete)
                     {
+                        Debug.Log("RunDialogue: Пропуск строки");
                         break;
                     }
                     else
                     {
-                        dialogueText.text = dialogueLines[currentDialogueIndex];
-                        isLineFullyDisplayed = true;
+                        dialogueText.text = dialogueLines[currentLineIndex];
+                        isLineComplete = true;
                     }
                 }
 
-                if (!isLineFullyDisplayed)
+                if (!isLineComplete)
                 {
                     elapsedTime += Time.unscaledDeltaTime;
-                }
-                else
-                {
-                    elapsedTime += Time.unscaledDeltaTime;
+                    if (elapsedTime >= lineDurations[currentLineIndex])
+                    {
+                        isLineComplete = true;
+                    }
                 }
 
                 yield return null;
             }
 
-            currentDialogueIndex++;
+            currentLineIndex++;
         }
 
-        DeactivateAllUIElements();
-        isDialogueActive = false;
-        Time.timeScale = 1f;
-
-        taskText.gameObject.SetActive(true);
-        StartCoroutine(BlinkText(taskText));
+        EndDialogue();
     }
 
-    void ShowDialogue(GameObject characterImage, string characterName, string dialogue)
+    private IEnumerator FadeOut(GameObject panel, float duration)
     {
-        DeactivateAllCharacterImages();
-
-        if (characterImage != null)
+        CanvasGroup canvasGroup = panel.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
         {
-            characterImage.SetActive(true);
+            canvasGroup = panel.AddComponent<CanvasGroup>();
+        }
+
+        float startAlpha = canvasGroup.alpha;
+        float rate = 1.0f / duration;
+        float progress = 0.0f;
+
+        while (progress < 1.0f)
+        {
+            canvasGroup.alpha = Mathf.Lerp(startAlpha, 0, progress);
+            progress += rate * Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        canvasGroup.alpha = 0;
+    }
+
+    private void EndDialogue()
+    {
+        Debug.Log("EndDialogue: Завершение диалога");
+        isDialogueRunning = false;
+        Time.timeScale = 1f;
+
+        dialogueUI.SetActive(false);
+        DeactivateAllPortraits();
+
+        if (taskText != null)
+        {
+            taskText.text = taskTextContent;
+            taskText.gameObject.SetActive(true);
+        }
+    }
+
+    private void ShowLine(string characterName, string dialogue, GameObject characterPortrait)
+    {
+        Debug.Log($"ShowLine: Показ строки для персонажа {characterName}");
+        DeactivateAllPortraits();
+
+        if (characterPortrait != null)
+        {
+            characterPortrait.SetActive(true);
         }
 
         dialogueText.text = dialogue;
-        nameText.text = characterName;
-        nameText.gameObject.SetActive(true);
-        isLineFullyDisplayed = true;
+        characterNameText.text = characterName;
+        characterNameText.gameObject.SetActive(true);
     }
 
-    GameObject GetCharacterImage(int index)
+    private void DeactivateAllPortraits()
     {
-        string characterName = characterNames[index];
-
-        if (characterName == "Отец")
+        Debug.Log("DeactivateAllPortraits: Деактивация всех портретов");
+        foreach (var portrait in characterPortraits)
         {
-            return imageDad;
-        }
-        else if (characterName == "Витя")
-        {
-            return imageVitya;
-        }
-        else if (characterName == "Мама")
-        {
-            return imageMom;
-        }
-        else if (characterName == "..." || characterName == "Родственники")
-        {
-            return null; // Не включать ни одно изображение
-        }
-        else
-        {
-            return null; // По умолчанию не включать изображение
-        }
-    }
-
-    void DeactivateAllUIElements()
-    {
-        dialoguePanel.SetActive(false);
-        DeactivateAllCharacterImages();
-        nameText.gameObject.SetActive(false);
-    }
-
-    void DeactivateAllCharacterImages()
-    {
-        imageMom.SetActive(false);
-        imageVitya.SetActive(false);
-        imageDad.SetActive(false);
-        imageRelative.SetActive(false);
-    }
-
-    IEnumerator BlinkText(TMP_Text text)
-    {
-        while (true)
-        {
-            for (float alpha = 0f; alpha <= 1f; alpha += Time.unscaledDeltaTime * blinkSpeed)
+            if (portrait != null)
             {
-                text.alpha = alpha;
-                yield return null;
-            }
-
-            for (float alpha = 1f; alpha >= 0f; alpha -= Time.unscaledDeltaTime * blinkSpeed)
-            {
-                text.alpha = alpha;
-                yield return null;
+                portrait.SetActive(false);
             }
         }
     }

@@ -1,125 +1,196 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+
+[System.Serializable]
+public class Weapon
+{
+    public GameObject weaponObject;
+    public float fireRate;
+    public int magazineCapacity;
+    public float damage;
+    public bool isShotgun;
+    public float spread;
+    public int pellets;
+    public float reloadTime;
+    public float cameraShakeIntensity;
+    public Camera weaponCamera;
+
+    public AudioClip[] shootingSounds;
+    public AudioClip reloadSound;
+
+    public GameObject muzzleFlashPrefab;
+    public GameObject imageWeapon;
+}
 
 public class PlayerShooting : MonoBehaviour
 {
-    public Transform firePoint; // Точка выстрела
-    public GameObject bulletPrefab; // Префаб пули
+    public List<Weapon> weapons;
+    public GameObject bulletPrefab;
+    public TMP_Text ammoText;
+    public float offsetRotation = 0f;
 
-    private int currentWeapon = 1; // 1 - автомат, 2 - пистолет
+    [Range(0f, 1f)]
+    public float shootingVolume = 1f;
+    [Range(0f, 1f)]
+    public float reloadVolume = 1f;
 
-    private int rifleAmmoReserve = 30; // Запас патронов для автомата
-    private int rifleAmmoInClip = 30; // Патроны в обойме автомата
-    private const int rifleClipSize = 30; // Размер обоймы автомата
-
-    private int pistolAmmoReserve = 20; // Запас патронов для пистолета
-    private int pistolAmmoInClip = 10; // Патроны в обойме пистолета
-    private const int pistolClipSize = 10; // Размер обоймы пистолета
-
+    private Transform currentFirePoint;
+    private Weapon currentWeapon;
+    private float nextFireTime = 0f;
+    private int currentAmmo;
     private bool isReloading = false;
+    private AudioSource audioSource;
+
+    private void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+        UpdateCurrentWeapon();
+        currentAmmo = currentWeapon.magazineCapacity;
+        UpdateAmmoText();
+    }
 
     private void Update()
     {
-        HandleWeaponSwitch();
-        HandleReload();
+        if (isReloading)
+            return;
+
+        UpdateCurrentWeapon();
         HandleShooting();
+        HandleReloading();
+        UpdateAmmoText();
     }
 
-    private void HandleWeaponSwitch()
+    private void UpdateCurrentWeapon()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        foreach (var weapon in weapons)
         {
-            currentWeapon = 1;
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            currentWeapon = 2;
-        }
-    }
-
-    private void HandleReload()
-    {
-        if (Input.GetKeyDown(KeyCode.R) && !isReloading)
-        {
-            if (currentWeapon == 1)
+            if (weapon.weaponObject.activeInHierarchy)
             {
-                StartCoroutine(ReloadRifle());
+                currentWeapon = weapon;
+                currentFirePoint = weapon.weaponObject.transform.Find("FirePoint");
+
+                if (weapon.imageWeapon != null)
+                {
+                    weapon.imageWeapon.SetActive(true);
+                }
             }
-            else if (currentWeapon == 2)
+            else
             {
-                StartCoroutine(ReloadPistol());
+                if (weapon.imageWeapon != null)
+                {
+                    weapon.imageWeapon.SetActive(false);
+                }
             }
         }
     }
 
     private void HandleShooting()
     {
-        if (Input.GetButtonDown("Fire1"))
+        if (Input.GetButton("Fire1") && Time.time >= nextFireTime && currentAmmo > 0)
         {
-            if (currentWeapon == 1 && rifleAmmoInClip >= 3)
-            {
-                StartCoroutine(FireRifleBurst());
-            }
-            else if (currentWeapon == 2 && pistolAmmoInClip > 0)
-            {
-                FirePistol();
-            }
-        }
-    }
-
-    private IEnumerator FireRifleBurst()
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            if (rifleAmmoInClip > 0)
-            {
-                FireBullet();
-                rifleAmmoInClip--;
-                yield return new WaitForSeconds(0.1f);
-            }
-        }
-        yield return new WaitForSeconds(0.5f);
-    }
-
-    private void FirePistol()
-    {
-        if (pistolAmmoInClip > 0)
-        {
+            nextFireTime = Time.time + 1f / currentWeapon.fireRate;
             FireBullet();
-            pistolAmmoInClip--;
+            PlayRandomShootingSound();
+            currentAmmo--;
+            ShakeCamera();
         }
+    }
+
+    private void HandleReloading()
+    {
+        if (Input.GetKeyDown(KeyCode.R) && currentAmmo < currentWeapon.magazineCapacity)
+        {
+            StartCoroutine(Reload());
+        }
+    }
+
+    private System.Collections.IEnumerator Reload()
+    {
+        isReloading = true;
+        PlayReloadSound();
+        yield return new WaitForSeconds(currentWeapon.reloadTime);
+        currentAmmo = currentWeapon.magazineCapacity;
+        isReloading = false;
     }
 
     private void FireBullet()
     {
-        Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+        if (currentWeapon.muzzleFlashPrefab != null)
+        {
+            GameObject muzzleFlash = Instantiate(currentWeapon.muzzleFlashPrefab, currentFirePoint.position, currentFirePoint.rotation);
+            Destroy(muzzleFlash, 0.5f);
+        }
+
+        if (currentWeapon.isShotgun)
+        {
+            for (int i = 0; i < currentWeapon.pellets; i++)
+            {
+                float spreadAngle = Random.Range(-currentWeapon.spread, currentWeapon.spread);
+                Quaternion bulletRotation = currentFirePoint.rotation * Quaternion.Euler(0, offsetRotation + spreadAngle, 0);
+                Instantiate(bulletPrefab, currentFirePoint.position, bulletRotation);
+            }
+        }
+        else
+        {
+            Quaternion bulletRotation = currentFirePoint.rotation * Quaternion.Euler(0, offsetRotation, 0);
+            Instantiate(bulletPrefab, currentFirePoint.position, bulletRotation);
+        }
     }
 
-    private IEnumerator ReloadRifle()
+    private void PlayRandomShootingSound()
     {
-        isReloading = true;
-        yield return new WaitForSeconds(2f);
-
-        int ammoNeeded = rifleClipSize - rifleAmmoInClip;
-        int ammoToReload = Mathf.Min(ammoNeeded, rifleAmmoReserve);
-
-        rifleAmmoInClip += ammoToReload;
-        rifleAmmoReserve -= ammoToReload;
-
-        isReloading = false;
+        if (currentWeapon.shootingSounds.Length > 0)
+        {
+            int randomIndex = Random.Range(0, currentWeapon.shootingSounds.Length);
+            audioSource.PlayOneShot(currentWeapon.shootingSounds[randomIndex], shootingVolume);
+        }
     }
 
-    private IEnumerator ReloadPistol()
+    private void PlayReloadSound()
     {
-        isReloading = true;
-        yield return new WaitForSeconds(1.5f);
+        if (currentWeapon.reloadSound != null)
+        {
+            audioSource.PlayOneShot(currentWeapon.reloadSound, reloadVolume);
+        }
+    }
 
-        int ammoNeeded = pistolClipSize - pistolAmmoInClip;
-        int ammoToReload = Mathf.Min(ammoNeeded, pistolAmmoReserve);
+    private void ShakeCamera()
+    {
+        if (currentWeapon.weaponCamera != null)
+        {
+            StartCoroutine(CameraShakeCoroutine(currentWeapon.cameraShakeIntensity));
+        }
+    }
 
-        pistolAmmoInClip += ammoToReload;
-        pistolAmmoReserve -= ammoToReload;
+    private System.Collections.IEnumerator CameraShakeCoroutine(float intensity)
+    {
+        Vector3 originalPosition = currentWeapon.weaponCamera.transform.position;
+        Quaternion originalRotation = currentWeapon.weaponCamera.transform.rotation;
+        float shakeDuration = 0.1f;
+        float elapsed = 0.0f;
 
-        isReloading = false;
+        while (elapsed < shakeDuration)
+        {
+            float x = Random.Range(-1f, 1f) * intensity;
+            float y = Random.Range(-1f, 1f) * intensity;
+
+            currentWeapon.weaponCamera.transform.position = originalPosition + new Vector3(x, y, 0);
+
+            elapsed += Time.deltaTime;
+
+            yield return null;
+        }
+
+        currentWeapon.weaponCamera.transform.position = originalPosition;
+        currentWeapon.weaponCamera.transform.rotation = originalRotation;
+    }
+
+    private void UpdateAmmoText()
+    {
+        if (ammoText != null && currentWeapon != null)
+        {
+            ammoText.text = $"{currentAmmo}/{currentWeapon.magazineCapacity}";
+        }
     }
 }
