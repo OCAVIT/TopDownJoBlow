@@ -1,36 +1,33 @@
 using UnityEngine;
 using System.Collections;
 
-public class TriggerFadeAndTeleport : MonoBehaviour
+public class TriggerFade : MonoBehaviour
 {
     public CanvasGroup blackPanel;
-    public GameObject playerManager;
-    public Transform spawnPoint;
     public GameObject TaskText;
+    public GameObject LOCO1;
+    public GameObject LOCO2;
     public float fadeDuration = 1f;
-    private void Start()
-    {
-        int checkPoint = PlayerPrefs.GetInt("CheckPoint");
-        if(checkPoint == 1)
-        {
-            FindAnyObjectByType<PlayerShooting>().WeaponLoad();
-            playerManager.transform.position = spawnPoint.position;
-        }
-    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
             TaskText.SetActive(false);
-            StartCoroutine(FadeAndTeleport());
+            StartCoroutine(Fade());
         }
     }
 
-    private IEnumerator FadeAndTeleport()
+    private IEnumerator Fade()
     {
+        // Выполняем FadeIn
         yield return StartCoroutine(FadeCanvasGroup(blackPanel, 0f, 1f, fadeDuration));
 
-        playerManager.transform.position = spawnPoint.position;
+        // Деактивируем LOCO1 и активируем LOCO2
+        LOCO1.SetActive(false);
+        LOCO2.SetActive(true);
+
+        // Выполняем FadeOut
         yield return StartCoroutine(FadeCanvasGroup(blackPanel, 1f, 0f, fadeDuration));
     }
 
