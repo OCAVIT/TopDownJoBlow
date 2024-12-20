@@ -8,7 +8,15 @@ public class TriggerFadeAndTeleport : MonoBehaviour
     public Transform spawnPoint;
     public GameObject TaskText;
     public float fadeDuration = 1f;
-
+    private void Start()
+    {
+        int checkPoint = PlayerPrefs.GetInt("CheckPoint");
+        if(checkPoint == 1)
+        {
+            FindAnyObjectByType<PlayerShooting>().WeaponLoad();
+            playerManager.transform.position = spawnPoint.position;
+        }
+    }
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -23,7 +31,6 @@ public class TriggerFadeAndTeleport : MonoBehaviour
         yield return StartCoroutine(FadeCanvasGroup(blackPanel, 0f, 1f, fadeDuration));
 
         playerManager.transform.position = spawnPoint.position;
-
         yield return StartCoroutine(FadeCanvasGroup(blackPanel, 1f, 0f, fadeDuration));
     }
 

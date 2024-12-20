@@ -3,6 +3,7 @@ using UnityEngine.AI;
 
 public class EnemyAI : MonoBehaviour
 {
+    public float health = 100;
     public float detectionRange = 10f;
     public float shootingRange = 5f;
     public float rotationSpeed = 5f;
@@ -18,7 +19,22 @@ public class EnemyAI : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        animator = GetComponent<Animator>(); // Получаем компонент Animator
+
+        // Пытаемся получить компонент Animator у дочернего объекта
+        animator = GetComponentInChildren<Animator>();
+
+        // Если Animator не найден у дочернего объекта
+        if (animator == null)
+        {
+            // Пытаемся получить компонент Animator у родительского объекта
+            animator = GetComponentInParent<Animator>();
+        }
+
+        // Проверяем, найден ли Animator
+        if (animator == null)
+        {
+            Debug.LogWarning("Animator не найден ни у дочерних, ни у родительских объектов.");
+        }
 
         // Находим игрока по тегу
         GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
@@ -66,6 +82,15 @@ public class EnemyAI : MonoBehaviour
             // Если игрок вне зоны видимости, враг может патрулировать или оставаться на месте
             agent.isStopped = true; 
             animator.SetBool("isWalking", false); // Останавливаем анимацию ходьбы
+        }
+    }
+    public void GetDamage(float damage)
+    {
+        health -= damage;
+        if(health <= 0)
+        {
+            FindAnyObjectByType<EnemyMananger>().MinusEnemy();
+            Destroy(gameObject);
         }
     }
 

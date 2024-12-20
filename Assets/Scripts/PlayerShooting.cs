@@ -37,7 +37,7 @@ public class PlayerShooting : MonoBehaviour
     public float shootingVolume = 1f;
     [Range(0f, 1f)]
     public float reloadVolume = 1f;
-
+    [SerializeField] public GameObject[] weaponsObjs;
     private Transform currentFirePoint;
     private Weapon currentWeapon;
     private float nextFireTime = 0f;
@@ -48,6 +48,7 @@ public class PlayerShooting : MonoBehaviour
 
     private void Start()
     {
+       
         audioSource = GetComponent<AudioSource>();
         UpdateCurrentWeapon();
         if (!ammoDictionary.ContainsKey(currentWeapon))
@@ -67,7 +68,13 @@ public class PlayerShooting : MonoBehaviour
         HandleReloading();
         UpdateAmmoText();
     }
-
+    public void WeaponLoad()
+    {
+        int weapon = PlayerPrefs.GetInt("weapon");
+        if (weapon == 1) weaponsObjs[0].SetActive(true);
+        if (weapon == 2) weaponsObjs[1].SetActive(true);
+        if (weapon == 3) weaponsObjs[2].SetActive(true);
+    }
     private void UpdateCurrentWeapon()
     {
         foreach (var weapon in weapons)

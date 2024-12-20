@@ -9,45 +9,47 @@ Shader "Custom/OutlineShader"
     }
     SubShader
     {
-        Tags { "RenderType"="Transparent" }
+        Tags { "RenderType"="Transparent" "Queue"="Overlay" }
         LOD 100
 
         Pass
         {
-            CGPROGRAM
+            Name "BASE"
+            Tags { "LightMode" = "UniversalForward" }
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct appdata_t
+            struct Attributes
             {
-                float4 vertex : POSITION;
+                float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
+            struct Varyings
             {
                 float2 uv : TEXCOORD0;
-                float4 vertex : SV_POSITION;
+                float4 positionHCS : SV_POSITION;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
-            v2f vert (appdata_t v)
+            Varyings vert (Attributes v)
             {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                Varyings o;
+                o.positionHCS = TransformObjectToHClip(v.positionOS.xyz);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings i) : SV_Target
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
+                half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
                 return col;
             }
-            ENDCG
+            ENDHLSL
         }
 
         Pass
@@ -57,40 +59,40 @@ Shader "Custom/OutlineShader"
             Cull Front
             Blend SrcAlpha OneMinusSrcAlpha
 
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct appdata_t
+            struct Attributes
             {
-                float4 vertex : POSITION;
+                float4 positionOS : POSITION;
             };
 
-            struct v2f
+            struct Varyings
             {
-                float4 vertex : SV_POSITION;
+                float4 positionHCS : SV_POSITION;
             };
 
             float _OutlineThickness;
             float4 _OutlineColor;
             float _OutlineBlinkSpeed;
 
-            v2f vert (appdata_t v)
+            Varyings vert (Attributes v)
             {
-                v2f o;
-                float3 norm = normalize(v.vertex.xyz);
-                v.vertex.xyz += norm * _OutlineThickness;
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                Varyings o;
+                float3 norm = normalize(v.positionOS.xyz);
+                v.positionOS.xyz += norm * _OutlineThickness;
+                o.positionHCS = TransformObjectToHClip(v.positionOS.xyz);
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings i) : SV_Target
             {
                 float alpha = (sin(_Time.y * _OutlineBlinkSpeed) + 1.0) * 0.5;
                 return float4(_OutlineColor.rgb, _OutlineColor.a * alpha);
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }

@@ -3,6 +3,7 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     public float speed = 10f;
+    public float damage = 25;
     public float lifeTime = 5f;
     public LayerMask collisionLayers;
     private TrailRenderer trailRenderer;
@@ -32,7 +33,11 @@ public class Bullet : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
+        if (other.CompareTag("Enemy"))
+        {
+            other.GetComponent<EnemyAI>().GetDamage(damage);
+            return;
+        }
         if ((collisionLayers.value & (1 << other.gameObject.layer)) != 0)
         {
             Destroy(gameObject);

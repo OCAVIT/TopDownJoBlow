@@ -36,9 +36,9 @@ public class DialogueSystem3 : MonoBehaviour
     {
         Debug.Log("Start: Диалоговая система инициализирована");
 
-        ButtonShot.onClick.AddListener(() => SelectWeapon(Shotgun));
-        ButtonRifle.onClick.AddListener(() => SelectWeapon(Rifle));
-        ButtonStorm.onClick.AddListener(() => SelectWeapon(StormRifle));
+        ButtonShot.onClick.AddListener(() => SelectWeapon(Shotgun, 2));
+        ButtonRifle.onClick.AddListener(() => SelectWeapon(Rifle,3));
+        ButtonStorm.onClick.AddListener(() => SelectWeapon(StormRifle,1));
     }
 
     public void StartDialogue()
@@ -146,7 +146,7 @@ public class DialogueSystem3 : MonoBehaviour
         }
     }
 
-    private void SelectWeapon(GameObject selectedWeapon)
+    private void SelectWeapon(GameObject selectedWeapon, int weaponIndex)
     {
         if (WeaponPanel != null)
         {
@@ -170,7 +170,6 @@ public class DialogueSystem3 : MonoBehaviour
 
         if (BigDoorsBefore != null) BigDoorsBefore.SetActive(false);
         if (BigDoorsAfter != null) BigDoorsAfter.SetActive(true);
-
         Time.timeScale = 1f;
     }
 }

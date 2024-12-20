@@ -7,6 +7,10 @@ TagManager:
   - Wall
   - collider
   - Collider
+  - BulletDestroyer
+  - PlayerBullet
+  - Enemy
+  - EnemyBullet
   layers:
   - Default
   - TransparentFX
