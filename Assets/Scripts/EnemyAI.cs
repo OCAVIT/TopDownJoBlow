@@ -64,7 +64,7 @@ public class EnemyAI : MonoBehaviour
         else
         {
             // ≈сли игрок вне зоны видимости, враг может патрулировать или оставатьс€ на месте
-            agent.isStopped = true;
+            agent.isStopped = true; 
             animator.SetBool("isWalking", false); // ќстанавливаем анимацию ходьбы
         }
     }
