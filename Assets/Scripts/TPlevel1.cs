@@ -1,16 +1,19 @@
 using UnityEngine;
 using System.Collections;
+
 public class TriggerFadeAndTeleport : MonoBehaviour
 {
     public CanvasGroup blackPanel;
     public GameObject playerManager;
     public Transform spawnPoint;
+    public GameObject TaskText;
     public float fadeDuration = 1f;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
+            TaskText.SetActive(false);
             StartCoroutine(FadeAndTeleport());
         }
     }
